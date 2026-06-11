@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WIZARDRY DUEL — Arcade Combat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;800&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg-0: #07050f;
+    --bg-1: #110828;
+    --bg-2: #1a0f3a;
+    --ink: #ece4ff;
+    --ink-dim: #9a8fc8;
+    --gold: #e5c870;
+    --gold-deep: #8a6a1f;
+    --blood: #c0334a;
+    --crit: #ff5577;
+    --frame: #2b1d55;
+
+    --santosa: #7fffd4;
+    --sybau:   #ff3860;
+    --gayalek: #ffd84d;
+    --eso:     #a050ff;
+    --whanjiep:#ff7a1a;
+    --datcha:  #ff2bd6;
+    --jailaimak: #00e5ff;
+    --yuenpensanprapoom: #39ff14;
+    --paitaiwan: #ff6b35;
+    --ambreryha: #c77dff;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: 'EB Garamond', Georgia, serif;
+    color: var(--ink);
+    background:
+      radial-gradient(ellipse at 20% 10%, #2b1063 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 90%, #4a1163 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, #150a36 0%, var(--bg-0) 70%);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 20px 30px, #fff, transparent),
+      radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,.6), transparent),
+      radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+      radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,.4), transparent),
+      radial-gradient(2px 2px at 160px 120px, rgba(229,200,112,.6), transparent),
+      radial-gradient(1px 1px at 200px 50px, #fff, transparent),
+      radial-gradient(1px 1px at 250px 100px, rgba(255,255,255,.5), transparent);
+    background-repeat: repeat;
+    background-size: 300px 200px;
+    opacity: .55;
+    animation: drift 120s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(circle at 50% 110%, rgba(160, 80, 255, 0.15), transparent 50%),
+      radial-gradient(circle at 50% -10%, rgba(127, 255, 212, 0.08), transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  @keyframes drift {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-200px); }
+  }
+
+  .stage {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  .crest { text-align: center; margin-bottom: 36px; }
+  .crest .rune {
+    color: var(--gold);
+    letter-spacing: 1.6em;
+    padding-left: 1.6em;
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: .8;
+  }
+  .crest h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-weight: 900;
+    font-size: clamp(36px, 6vw, 68px);
+    letter-spacing: .06em;
+    margin: 8px 0 6px;
+    background: linear-gradient(180deg, #fff4cf 0%, var(--gold) 45%, #6b4d10 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 30px rgba(229,200,112,.25);
+  }
+  .crest h1 .amp { font-style: italic; font-weight: 400; opacity: .85; }
+  .crest p { color: var(--ink-dim); font-style: italic; font-size: 16px; margin: 0; letter-spacing: .04em; }
+  .divider {
+    display: flex; align-items: center; justify-content: center;
+    gap: 14px; margin: 14px 0 0; color: var(--gold-deep);
+  }
+  .divider span { height: 1px; width: 80px; background: linear-gradient(90deg, transparent, var(--gold-deep), transparent); }
+  .divider svg { width: 22px; height: 22px; color: var(--gold); }
+
+  /* PLAYER HUD */
+  .player-hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(180deg, rgba(35,18,75,.85), rgba(15,8,36,.85));
+    border: 1px solid var(--frame);
+    border-radius: 4px;
+    padding: 14px 20px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .hud-block { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .hud-label { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: .25em; color: var(--ink-dim); text-transform: uppercase; }
+  .hud-val { font-family: 'Cinzel Decorative', serif; font-size: 22px; color: var(--gold); }
+  .hud-val.gold-val { color: #ffd700; }
+  .xp-bar-wrap { flex: 1; min-width: 200px; }
+  .xp-bar-label { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: .2em; color: var(--ink-dim); margin-bottom: 4px; text-align: center; }
+  .xp-bar { height: 12px; background: rgba(0,0,0,.5); border: 1px solid #a050ff; position: relative; }
+  .xp-fill { height: 100%; background: linear-gradient(90deg, #a050ff, #ff2bd6); transition: width .4s ease; }
+  .xp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-family: 'Cinzel', serif; font-size: 9px; color: #fff; text-shadow: 0 0 4px #000; letter-spacing: .1em; }
+  .hud-btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .hud-btn {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: .2em;
+    padding: 6px 16px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all .2s ease;
+  }
+  .hud-btn:hover { background: var(--gold); color: #1a0f3a; }
+  .hud-btn.admin-active { border-color: #ff2bd6; color: #ff2bd6; }
+  .hud-btn.admin-active:hover { background: #ff2bd6; color: #fff; }
+  .hud-btn.shop-btn { border-color: #ffd700; color: #ffd700; }
+  .hud-btn.shop-btn:hover { background: #ffd700; color: #1a0f3a; }
+
+  /* PANEL */
+  .panel {
+    background: linear-gradient(180deg, rgba(35,18,75,.85), rgba(15,8,36,.85));
+    border: 1px solid var(--frame);
+    border-radius: 4px;
+    position: relative;
+    padding: 28px;
+    box-shadow: 0 0 0 1px rgba(229,200,112,.08) inset, 0 30px 80px rgba(0,0,0,.5), 0 0 120px rgba(120,60,220,.12);
+  }
+  .panel::before, .panel::after {
+    content: ''; position: absolute; width: 18px; height: 18px;
+    border: 1px solid var(--gold); opacity: .7;
+  }
+  .panel::before { top: 8px; left: 8px; border-right: none; border-bottom: none; }
+  .panel::after  { bottom: 8px; right: 8px; border-left: none; border-top: none; }
+
+  .panel-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 800;
+    letter-spacing: .28em;
+    font-size: 13px;
+    color: var(--gold);
+    text-align: center;
+    margin: 0 0 24px;
+    text-transform: uppercase;
+  }
+
+  /* WIZARD SELECT */
+  .wizards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; }
+  .wizard-card {
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(0,0,0,.25));
+    border: 1px solid rgba(229,200,112,.18);
+    padding: 22px 18px 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .wizard-card::after {
+    content: '';
+    position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle, var(--accent, var(--gold)) 0%, transparent 50%);
+    opacity: 0; transition: opacity .4s ease; pointer-events: none;
+  }
+  .wizard-card:hover { transform: translateY(-4px); border-color: var(--accent, var(--gold)); box-shadow: 0 0 30px var(--accent, var(--gold)); }
+  .wizard-card:hover::after { opacity: .08; }
+  .wizard-card.selected { border-color: var(--accent); background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.4)); box-shadow: 0 0 40px var(--accent), inset 0 0 20px rgba(0,0,0,.5); }
+  .wizard-card.selected::after { opacity: .15; }
+  .wizard-card.locked { opacity: 0.4; cursor: not-allowed; }
+  .wizard-card.locked:hover { transform: none; box-shadow: none; }
+  .lock-badge {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(0,0,0,.7);
+    border: 1px solid var(--blood);
+    color: var(--blood);
+    font-size: 10px;
+    font-family: 'Cinzel', serif;
+    letter-spacing: .1em;
+    padding: 3px 7px;
+  }
+
+  .wizard-sigil {
+    width: 64px; height: 64px; margin: 0 auto 12px;
+    border: 1px solid var(--accent); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel Decorative', serif; font-size: 28px; font-weight: 900;
+    color: var(--accent); box-shadow: 0 0 20px var(--accent), inset 0 0 15px rgba(0,0,0,.6);
+    background: radial-gradient(circle, rgba(0,0,0,.4), transparent);
+  }
+  .wizard-name { font-family: 'Cinzel', serif; font-weight: 800; letter-spacing: .14em; font-size: 18px; margin: 0 0 4px; color: var(--ink); }
+  .wizard-title { font-style: italic; font-size: 13px; color: var(--ink-dim); margin: 0 0 14px; letter-spacing: .04em; }
+  .wizard-stats { display: flex; justify-content: space-around; font-size: 12px; font-family: 'Cinzel', serif; letter-spacing: .08em; color: var(--ink-dim); }
+  .wizard-stats b { display: block; color: var(--accent); font-size: 18px; font-family: 'EB Garamond', serif; margin-top: 2px; }
+
+  .vs-row { display: flex; align-items: center; justify-content: center; gap: 28px; margin: 26px 0 8px; flex-wrap: wrap; }
+  .vs-slot { text-align: center; min-width: 160px; }
+  .vs-slot .lbl { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: .3em; color: var(--ink-dim); }
+  .vs-slot .val { font-family: 'Cinzel Decorative', serif; font-size: 24px; color: var(--slot-color, var(--ink-dim)); margin-top: 4px; min-height: 36px; text-shadow: 0 0 18px var(--slot-color, transparent); }
+  .vs-glyph { font-family: 'Cinzel Decorative', serif; font-size: 32px; color: var(--blood); text-shadow: 0 0 20px var(--blood); }
+
+  .btn-row { text-align: center; margin-top: 24px; }
+  .btn {
+    background: transparent; color: var(--gold); border: 1px solid var(--gold);
+    padding: 14px 36px; font-family: 'Cinzel', serif; font-weight: 800;
+    letter-spacing: .3em; font-size: 14px; cursor: pointer; text-transform: uppercase;
+    position: relative; transition: all .25s ease;
+  }
+  .btn:hover:not(:disabled) { background: var(--gold); color: #1a0f3a; box-shadow: 0 0 30px var(--gold); }
+  .btn:disabled { opacity: .35; cursor: not-allowed; }
+
+  /* ARENA */
+  .arena-wrap { margin-top: 32px; display: none; }
+  .arena-wrap.active { display: block; }
+  .combatant-bars { display: grid; grid-template-columns: 1fr auto 1fr; gap: 24px; align-items: center; margin-bottom: 14px; }
+  .bar-block .who { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .bar-block.right .who { justify-content: flex-end; }
+  .who .name { font-family: 'Cinzel Decorative', serif; font-size: 22px; color: var(--bar-color, var(--gold)); text-shadow: 0 0 14px var(--bar-color, var(--gold)); letter-spacing: .06em; }
+  .who .title { font-style: italic; color: var(--ink-dim); font-size: 13px; }
+  .hpbar { height: 22px; background: rgba(0,0,0,.5); border: 1px solid var(--bar-color, var(--gold)); position: relative; overflow: hidden; box-shadow: inset 0 0 10px rgba(0,0,0,.7), 0 0 14px var(--bar-color, var(--gold)); }
+  .hpfill { height: 100%; background: linear-gradient(90deg, var(--bar-color), color-mix(in srgb, var(--bar-color) 50%, white 50%)); width: 100%; transition: width .4s cubic-bezier(.2,.8,.3,1); box-shadow: 0 0 20px var(--bar-color); }
+  .hp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-family: 'Cinzel', serif; font-weight: 800; font-size: 13px; color: #fff; text-shadow: 0 0 4px #000, 0 0 8px #000; letter-spacing: .1em; }
+  .vs-mid { font-family: 'Cinzel Decorative', serif; font-size: 28px; color: var(--blood); text-shadow: 0 0 20px var(--blood); }
+
+  .arena {
+    position: relative; height: 360px;
+    border: 1px solid var(--frame);
+    background:
+      linear-gradient(180deg, transparent 0%, transparent 78%, rgba(0,0,0,.5) 100%),
+      radial-gradient(ellipse at 50% 100%, rgba(229,200,112,.08), transparent 60%),
+      radial-gradient(ellipse at 20% 50%, rgba(160,80,255,.15), transparent 60%),
+      radial-gradient(ellipse at 80% 50%, rgba(255,100,80,.12), transparent 60%),
+      linear-gradient(180deg, #0a0420, #1a0c3a 70%, #2a1450 100%);
+    overflow: hidden;
+    box-shadow: inset 0 0 60px rgba(0,0,0,.8), 0 0 0 1px rgba(229,200,112,.08) inset;
+  }
+  .arena::before {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 80px;
+    background: repeating-linear-gradient(90deg, rgba(229,200,112,.05) 0 2px, transparent 2px 60px), linear-gradient(180deg, transparent, rgba(0,0,0,.6));
+    pointer-events: none;
+  }
+  .arena::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 26px; height: 14px;
+    background: radial-gradient(ellipse 100px 10px at 14% 50%, rgba(127,255,212,.4), transparent 70%), radial-gradient(ellipse 100px 10px at 86% 50%, rgba(255,56,96,.4), transparent 70%);
+    pointer-events: none;
+  }
+
+  .stickman { position: absolute; bottom: 20px; width: 80px; height: 200px; transition: transform .15s ease; }
+  .stickman.left { left: 7%; }
+  .stickman.right { right: 7%; transform: scaleX(-1); }
+  .stickman .body { animation: bob 2.2s ease-in-out infinite; transform-origin: center bottom; }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+  .stickman.cast .body { animation: cast .5s ease-out; }
+  @keyframes cast { 0% { transform: translateY(0) scale(1); } 30% { transform: translateY(-8px) scale(1.05); } 100% { transform: translateY(0) scale(1); } }
+  .stickman.hit { animation: shake .4s ease; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+  .stickman.right.hit { animation: shake-r .4s ease; }
+  @keyframes shake-r { 0%, 100% { transform: scaleX(-1) translateX(0); } 20% { transform: scaleX(-1) translateX(-8px); } 40% { transform: scaleX(-1) translateX(8px); } 60% { transform: scaleX(-1) translateX(-5px); } 80% { transform: scaleX(-1) translateX(5px); } }
+  .stickman .aura { position: absolute; inset: -10px; border-radius: 50%; background: radial-gradient(circle, var(--aura-color, transparent) 0%, transparent 60%); opacity: .5; filter: blur(8px); pointer-events: none; }
+  .stickman.defeated .body { animation: fall 1s forwards ease-in; }
+  @keyframes fall { 0% { transform: rotate(0); } 100% { transform: rotate(85deg) translateY(20px); opacity: .3; } }
+
+  .projectile { position: absolute; bottom: 130px; width: 36px; height: 36px; border-radius: 50%; background: radial-gradient(circle, var(--spell-color, #fff) 0%, transparent 70%); box-shadow: 0 0 30px var(--spell-color, #fff), 0 0 60px var(--spell-color, #fff); pointer-events: none; z-index: 5; }
+  .projectile .core { position: absolute; inset: 8px; border-radius: 50%; background: #fff; box-shadow: 0 0 16px #fff; }
+  .projectile .trail { position: absolute; top: 50%; width: 40px; height: 6px; background: linear-gradient(90deg, transparent, var(--spell-color)); transform: translateY(-50%); filter: blur(2px); }
+  .projectile.from-left .trail { right: 100%; }
+  .projectile.from-right .trail { left: 100%; transform: translateY(-50%) scaleX(-1); }
+
+  .impact { position: absolute; width: 120px; height: 120px; pointer-events: none; z-index: 6; transform: translate(-50%, -50%); }
+  .impact .ring { position: absolute; inset: 0; border: 2px solid var(--spell-color, #fff); border-radius: 50%; animation: ring 0.6s ease-out forwards; }
+  @keyframes ring { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+  .impact .spark { position: absolute; top: 50%; left: 50%; width: 4px; height: 30px; background: linear-gradient(180deg, var(--spell-color), transparent); transform-origin: center top; animation: spark 0.7s ease-out forwards; }
+  @keyframes spark { 0% { transform: rotate(var(--rot)) translateY(0) scale(1); opacity: 1; } 100% { transform: rotate(var(--rot)) translateY(50px) scale(.3); opacity: 0; } }
+
+  .dmg { position: absolute; font-family: 'Cinzel Decorative', serif; font-weight: 900; font-size: 38px; color: var(--dmg-color, var(--crit)); text-shadow: 0 0 16px var(--dmg-color, var(--crit)), 2px 2px 0 #000; pointer-events: none; animation: dmgRise 1.2s ease-out forwards; z-index: 7; }
+  @keyframes dmgRise { 0% { transform: translate(-50%, 0) scale(.4); opacity: 0; } 20% { transform: translate(-50%, -10px) scale(1.3); opacity: 1; } 100% { transform: translate(-50%, -90px) scale(1); opacity: 0; } }
+
+  .spells { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 22px; }
+  .spell-btn {
+    position: relative; background: linear-gradient(180deg, rgba(0,0,0,.4), rgba(0,0,0,.7));
+    border: 1px solid var(--spell-color); color: var(--ink); padding: 14px 14px 16px;
+    cursor: pointer; overflow: hidden; transition: transform .15s ease, box-shadow .25s ease;
+    text-align: left; font-family: 'EB Garamond', serif;
+  }
+  .spell-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 0 30px var(--spell-color), inset 0 0 20px color-mix(in srgb, var(--spell-color) 30%, transparent); }
+  .spell-btn:disabled { cursor: not-allowed; opacity: .55; }
+  .spell-btn .name { display: block; font-family: 'Cinzel', serif; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; color: var(--spell-color); text-shadow: 0 0 10px var(--spell-color); margin-bottom: 4px; word-break: break-word; }
+  .spell-btn .desc { font-style: italic; font-size: 12px; color: var(--ink-dim); line-height: 1.3; min-height: 28px; display: block; margin-bottom: 8px; }
+  .spell-btn .meta { display: flex; justify-content: space-between; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: .1em; color: var(--ink-dim); border-top: 1px solid rgba(255,255,255,.08); padding-top: 6px; }
+  .spell-btn .meta b { color: var(--spell-color); }
+  .cooldown-veil { position: absolute; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; font-family: 'Cinzel Decorative', serif; font-size: 36px; color: var(--spell-color); transition: opacity .2s; opacity: 0; pointer-events: none; }
+  .spell-btn.cooling .cooldown-veil { opacity: 1; }
+  .luck-tag { position: absolute; top: 6px; right: 6px; background: rgba(255,215,0,.15); border: 1px solid #ffd700; color: #ffd700; font-size: 9px; font-family: 'Cinzel', serif; letter-spacing: .1em; padding: 2px 5px; }
+
+  .log { margin-top: 20px; border-top: 1px solid var(--frame); padding-top: 14px; max-height: 110px; overflow-y: auto; font-size: 14px; color: var(--ink-dim); font-style: italic; line-height: 1.55; font-family: 'EB Garamond', serif; }
+  .log p { margin: 0 0 4px; }
+  .log p::before { content: '✦  '; color: var(--gold); font-style: normal; }
+  .log p.crit { color: var(--crit); }
+  .log p.heal { color: var(--santosa); }
+  .log p.system { color: var(--gold); }
+  .log p.levelup { color: #ff2bd6; }
+  .log p.shop { color: #ffd700; }
+
+  .turn-indicator { text-align: center; font-family: 'Cinzel', serif; font-weight: 600; letter-spacing: .25em; font-size: 13px; color: var(--gold); text-transform: uppercase; margin-bottom: 14px; min-height: 18px; }
+  .turn-indicator .you { color: var(--santosa); }
+  .turn-indicator .foe { color: var(--blood); }
+
+  /* VICTORY */
+  .victory { position: fixed; inset: 0; background: radial-gradient(circle, rgba(0,0,0,.85), rgba(0,0,0,.97)); display: none; align-items: center; justify-content: center; z-index: 50; animation: fadeIn .6s ease; }
+  .victory.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .victory-card { text-align: center; padding: 50px 70px; border: 1px solid var(--gold); background: linear-gradient(180deg, rgba(35,18,75,.9), rgba(15,8,36,.95)); position: relative; max-width: 90vw; }
+  .victory-card::before, .victory-card::after { content: ''; position: absolute; width: 26px; height: 26px; border: 1px solid var(--gold); }
+  .victory-card::before { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+  .victory-card::after  { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+  .victory-card h2 { font-family: 'Cinzel Decorative', serif; font-size: clamp(32px, 6vw, 52px); margin: 0; background: linear-gradient(180deg, #fff4cf, var(--gold), #6b4d10); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: .08em; }
+  .victory-card p { font-style: italic; color: var(--ink); font-size: 18px; margin: 12px 0 10px; letter-spacing: .05em; }
+  .victory-rewards { background: rgba(0,0,0,.3); border: 1px solid var(--frame); padding: 14px 20px; margin: 10px 0 20px; font-family: 'Cinzel', serif; font-size: 13px; color: var(--gold); letter-spacing: .12em; }
+  .victory-rewards b { color: #ffd700; }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.88); display: none; align-items: center; justify-content: center; z-index: 60; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: linear-gradient(180deg, rgba(35,18,75,.95), rgba(15,8,36,.98)); border: 1px solid var(--gold); padding: 32px; max-width: 500px; width: 90vw; max-height: 80vh; overflow-y: auto; position: relative; }
+  .modal h3 { font-family: 'Cinzel Decorative', serif; font-size: 24px; color: var(--gold); margin: 0 0 20px; text-align: center; letter-spacing: .08em; }
+  .modal-close { position: absolute; top: 12px; right: 16px; background: none; border: none; color: var(--ink-dim); font-size: 22px; cursor: pointer; line-height: 1; }
+  .modal-close:hover { color: var(--gold); }
+  .modal-input { width: 100%; background: rgba(0,0,0,.5); border: 1px solid var(--frame); color: var(--ink); font-family: 'Cinzel', serif; font-size: 16px; padding: 10px 14px; letter-spacing: .15em; text-align: center; margin-bottom: 14px; outline: none; }
+  .modal-input:focus { border-color: var(--gold); }
+  .modal-msg { text-align: center; font-style: italic; font-size: 14px; min-height: 20px; margin-bottom: 12px; }
+  .modal-msg.success { color: var(--santosa); }
+  .modal-msg.error { color: var(--blood); }
+
+  /* SHOP */
+  .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .shop-item {
+    background: linear-gradient(180deg, rgba(0,0,0,.4), rgba(0,0,0,.7));
+    border: 1px solid var(--item-color, var(--gold));
+    padding: 16px; cursor: pointer;
+    transition: all .2s ease; position: relative;
+  }
+  .shop-item:hover:not(.owned):not(.cant-afford) { transform: translateY(-2px); box-shadow: 0 0 20px var(--item-color, var(--gold)); }
+  .shop-item.owned { opacity: .5; cursor: default; }
+  .shop-item.owned::after { content: 'OWNED'; position: absolute; top: 8px; right: 8px; background: rgba(127,255,212,.2); border: 1px solid var(--santosa); color: var(--santosa); font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: .15em; padding: 2px 6px; }
+  .shop-item.cant-afford { opacity: .45; cursor: not-allowed; }
+  .shop-item .item-name { font-family: 'Cinzel', serif; font-weight: 800; font-size: 14px; color: var(--item-color, var(--gold)); letter-spacing: .1em; margin-bottom: 4px; }
+  .shop-item .item-desc { font-style: italic; font-size: 12px; color: var(--ink-dim); margin-bottom: 8px; line-height: 1.3; }
+  .shop-item .item-price { font-family: 'Cinzel', serif; font-size: 12px; color: #ffd700; letter-spacing: .1em; }
+  .shop-section-title { font-family: 'Cinzel', serif; font-weight: 800; letter-spacing: .3em; font-size: 12px; color: var(--gold); text-transform: uppercase; margin: 20px 0 10px; border-bottom: 1px solid var(--frame); padding-bottom: 6px; }
+
+  /* ADMIN */
+  .admin-panel { background: rgba(255,43,214,.05); border: 1px solid #ff2bd6; padding: 20px; margin-bottom: 16px; }
+  .admin-panel h4 { font-family: 'Cinzel', serif; color: #ff2bd6; margin: 0 0 12px; letter-spacing: .2em; font-size: 12px; }
+  .admin-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .admin-btn { background: rgba(255,43,214,.1); border: 1px solid #ff2bd6; color: #ff2bd6; font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: .15em; padding: 6px 14px; cursor: pointer; text-transform: uppercase; transition: all .2s; }
+  .admin-btn:hover { background: #ff2bd6; color: #fff; }
+
+  /* LEVEL UP TOAST */
+  .levelup-toast {
+    position: fixed; top: 30px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(90deg, #a050ff, #ff2bd6);
+    border: 1px solid #fff; padding: 14px 30px; z-index: 80;
+    font-family: 'Cinzel Decorative', serif; font-size: 20px; color: #fff;
+    letter-spacing: .1em; text-align: center;
+    animation: toastIn 3s ease forwards; pointer-events: none;
+    white-space: nowrap;
+  }
+  @keyframes toastIn {
+    0% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    75% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  }
+
+  footer { margin-top: 50px; text-align: center; font-size: 12px; color: var(--ink-dim); font-style: italic; letter-spacing: .1em; }
+
+  @media (max-width: 640px) {
+    .crest h1 { font-size: 38px; }
+    .arena { height: 280px; }
+    .stickman { width: 60px; height: 150px; }
+    .combatant-bars { grid-template-columns: 1fr 1fr; gap: 12px; }
+    .vs-mid { display: none; }
+    .player-hud { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <header class="crest">
+    <div class="rune">✦ ✦ ✦ ✦ ✦</div>
+    <h1>Wizardry <span class="amp">&</span> Duel</h1>
+    <p>— a duel of stickmen, spell, and sovereign syllable —</p>
+    <div class="divider">
+      <span></span>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/></svg>
+      <span></span>
+    </div>
+  </header>
+
+  <!-- PLAYER HUD -->
+  <div class="player-hud">
+    <div class="hud-block">
+      <div class="hud-label">Level</div>
+      <div class="hud-val" id="hudLevel">1</div>
+    </div>
+    <div class="xp-bar-wrap">
+      <div class="xp-bar-label" id="xpBarLabel">XP: 0 / 20</div>
+      <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+    </div>
+    <div class="hud-block">
+      <div class="hud-label">Gold</div>
+      <div class="hud-val gold-val" id="hudGold">0</div>
+    </div>
+    <div class="hud-btn-row">
+      <button class="hud-btn shop-btn" onclick="openShop()">⚗ Shop</button>
+      <button class="hud-btn" id="codeBtn" onclick="openCodeModal()">◈ Code</button>
+    </div>
+  </div>
+
+  <!-- SELECTION PANEL -->
+  <section class="panel" id="selectPanel">
+    <h2 class="panel-title">— Choose Thy Wizard —</h2>
+    <div id="adminPanelSelect" style="display:none" class="admin-panel">
+      <h4>⚠ Admin Mode Active</h4>
+      <div class="admin-grid" id="adminControlsSelect"></div>
+    </div>
+    <div class="wizards" id="wizardsSelf"></div>
+
+    <div class="vs-row" style="margin-top:32px">
+      <div class="vs-slot">
+        <div class="lbl">Your Champion</div>
+        <div class="val" id="slotSelf">—</div>
+      </div>
+      <div class="vs-glyph">⚔</div>
+      <div class="vs-slot">
+        <div class="lbl">Your Foe</div>
+        <div class="val" id="slotFoe">—</div>
+      </div>
+    </div>
+
+    <h2 class="panel-title" style="margin-top:30px">— Choose Thy Foe —</h2>
+    <div class="wizards" id="wizardsFoe"></div>
+
+    <div class="btn-row">
+      <button class="btn" id="beginBtn" disabled>Begin the Duel</button>
+    </div>
+  </section>
+
+  <!-- ARENA PANEL -->
+  <section class="arena-wrap" id="arenaPanel">
+    <div class="panel">
+      <div class="combatant-bars">
+        <div class="bar-block left" id="leftBar">
+          <div class="who">
+            <span class="name" id="leftName">—</span>
+            <span class="title" id="leftTitle"></span>
+          </div>
+          <div class="hpbar"><div class="hpfill" id="leftFill"></div><span class="hp-text" id="leftHp">100 / 100</span></div>
+        </div>
+        <div class="vs-mid">⚔</div>
+        <div class="bar-block right" id="rightBar">
+          <div class="who">
+            <span class="title" id="rightTitle"></span>
+            <span class="name" id="rightName">—</span>
+          </div>
+          <div class="hpbar"><div class="hpfill" id="rightFill"></div><span class="hp-text" id="rightHp">100 / 100</span></div>
+        </div>
+      </div>
+
+      <div class="turn-indicator" id="turnIndicator"></div>
+
+      <div class="arena" id="arena">
+        <div class="stickman left" id="stickL">
+          <div class="aura"></div>
+          <div class="body">
+            <svg viewBox="0 0 80 200" width="80" height="200">
+              <circle cx="40" cy="22" r="14" fill="none" stroke="#fff" stroke-width="3"/>
+              <path d="M22 18 L40 -10 L58 18 Z" fill="var(--accent-l,#7fffd4)" stroke="#fff" stroke-width="2"/>
+              <circle cx="40" cy="-8" r="3" fill="#fff"/>
+              <line x1="40" y1="36" x2="40" y2="110" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <line x1="40" y1="55" x2="65" y2="80" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <line x1="40" y1="55" x2="20" y2="75" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <line x1="65" y1="80" x2="72" y2="40" stroke="#caa54e" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="72" cy="38" r="5" fill="var(--accent-l,#7fffd4)" opacity=".85"/>
+              <line x1="40" y1="110" x2="25" y2="160" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <line x1="40" y1="110" x2="55" y2="160" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <path d="M28 90 L40 80 L52 90 L58 160 L22 160 Z" fill="var(--accent-l,#7fffd4)" opacity=".3" stroke="#fff" stroke-width="1.5"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stickman right" id="stickR">
+          <div class="aura"></div>
+          <div class="body">
+            <svg viewBox="0 0 80 200" width="80" height="200">
+              <circle cx="40" cy="22" r="14" fill="none" stroke="#fff" stroke-width="3"/>
+              <path d="M22 18 L40 -10 L58 18 Z" fill="var(--accent-r,#ff3860)" stroke="#fff" stroke-width="2"/>
+              <circle cx="40" cy="-8" r="3" fill="#fff"/>
+              <line x1="40" y1="36" x2="40" y2="110" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <line x1="40" y1="55" x2="65" y2="80" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <line x1="40" y1="55" x2="20" y2="75" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <line x1="65" y1="80" x2="72" y2="40" stroke="#caa54e" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="72" cy="38" r="5" fill="var(--accent-r,#ff3860)" opacity=".85"/>
+              <line x1="40" y1="110" x2="25" y2="160" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <line x1="40" y1="110" x2="55" y2="160" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <path d="M28 90 L40 80 L52 90 L58 160 L22 160 Z" fill="var(--accent-r,#ff3860)" opacity=".3" stroke="#fff" stroke-width="1.5"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="panel-title" style="margin: 24px 0 14px">— Incantations —</h3>
+      <div class="spells" id="spells"></div>
+      <div class="log" id="log"></div>
+      <div class="btn-row">
+        <button class="btn" id="surrenderBtn">Surrender &amp; Return</button>
+      </div>
+    </div>
+  </section>
+
+  <footer><p>✦ Arcade Combat — Bound by ancient script &amp; cosmic ink ✦</p></footer>
+</div>
+
+<!-- VICTORY OVERLAY -->
+<div class="victory" id="victory">
+  <div class="victory-card">
+    <h2 id="victoryTitle">VICTORIOUS</h2>
+    <p id="victoryText">The arcane breeze falls still.</p>
+    <div class="victory-rewards" id="victoryRewards"></div>
+    <button class="btn" id="rematchBtn">Cast Again</button>
+  </div>
+</div>
+
+<!-- CODE MODAL -->
+<div class="modal-overlay" id="codeModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeCodeModal()">✕</button>
+    <h3>◈ Enter Arcane Code</h3>
+    <input class="modal-input" type="text" id="codeInput" placeholder="TYPE HERE..." autocomplete="off" />
+    <div class="modal-msg" id="codeMsg"></div>
+    <div class="btn-row" style="margin-top:0">
+      <button class="btn" onclick="submitCode()">Invoke</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHOP MODAL -->
+<div class="modal-overlay" id="shopModal">
+  <div class="modal" style="max-width:620px">
+    <button class="modal-close" onclick="closeShop()">✕</button>
+    <h3>⚗ The Arcane Bazaar</h3>
+    <div style="text-align:center; font-family:'Cinzel',serif; font-size:13px; color:#ffd700; margin-bottom:16px; letter-spacing:.1em">
+      Your Gold: <span id="shopGoldDisplay">0</span>
+    </div>
+    <div id="shopContent"></div>
+  </div>
+</div>
+
+<!-- ADMIN MODAL -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal" style="max-width:600px">
+    <button class="modal-close" onclick="closeAdminModal()">✕</button>
+    <h3 style="color:#ff2bd6">⚠ Admin Control Panel</h3>
+    <div id="adminModalContent"></div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   DATA
+===================================================================== */
+const WIZARDS = {
+  Jin: { name:'Jin', title:'the Tempered Flame', color:'#e5c870', hp:100, sigil:'J', flavor:'A balanced master of the burning truth.' },
+  Acre: { name:'Acre', title:'the Stonebound', color:'#7fffd4', hp:130, sigil:'A', bonus:'tank', flavor:'A warden of granite spirit; takes 15% less damage.' },
+  Tim: { name:'Tim', title:'the Reckless', color:'#ff5577', hp:80, sigil:'T', bonus:'glass', flavor:'A glass cannon; deals 20% more damage.' },
+  Paji: { name:'Paji', title:'the Swift Hand', color:'#a050ff', hp:95, sigil:'P', bonus:'fast', flavor:'A wind-walker; spells recharge 30% faster.' },
+  Ray: { name:'Ray', title:'the Radiant', color:'#00e5ff', hp:105, sigil:'R', bonus:'lucky', flavor:'Fortune favours Ray; critical hits deal 40% extra damage.' },
+  Yamato: { name:'Yamato', title:'the Iron Soul', color:'#ff6b35', hp:120, sigil:'Y', bonus:'berserk', flavor:'Grows stronger as health falls; +1% damage per 1% HP lost.' },
+  Prom: { name:'Prom', title:'the Forbidden', color:'#ff2bd6', hp:90, sigil:'Ω', bonus:'forbidden', flavor:'A wizard of unstoppable ruin. Unlocked by secret code.', secret:true },
+  Tan: { name:'Tan', title:'the Serene', color:'#39ff14', hp:110, sigil:'T', bonus:'regen', flavor:'Regenerates 3 HP per turn passively.' }
+};
+
+const ALL_SPELLS = [
+  { id:'santosa',    name:'Santosa',              color:'#7fffd4', desc:'A serene chant that heals the caster\'s wounds.',      dmg:[-18,-10], cd:3,  glyph:'☘',  cost:0,   levelReq:1 },
+  { id:'gayalek',    name:'Gayalek',               color:'#ffd84d', desc:'A bolt of golden lightning from clouded heavens.',      dmg:[18,26],   cd:2,  glyph:'⚡', cost:0,   levelReq:1 },
+  { id:'sybau',      name:'Sybau',                 color:'#ff3860', desc:'A shout so dreadful it silences the soul.',             dmg:[22,30],   cd:2,  glyph:'✺',  cost:40,  levelReq:3 },
+  { id:'eso',        name:'Eso',                   color:'#a050ff', desc:'A sphere of void that drinks the daylight.',            dmg:[20,28],   cd:3,  glyph:'◉',  cost:50,  levelReq:2 },
+  { id:'whanjiep',   name:'Whanjiep',              color:'#ff7a1a', desc:'A bursting ember that sears flesh and pride.',          dmg:[26,36],   cd:4,  glyph:'☼',  cost:70,  levelReq:4 },
+  { id:'datchaneep', name:'Datchaneepricatthowwhyyu', color:'#ff2bd6', desc:'The forbidden tongue. Devastates all who hear.',   dmg:[42,58],   cd:6,  glyph:'✸',  cost:120, levelReq:6 },
+  { id:'jailaimak',  name:'Jailaimak',             color:'#00e5ff', desc:'A crystal lance that pierces magical defences.',       dmg:[28,38],   cd:3,  glyph:'❄',  cost:60,  levelReq:3 },
+  { id:'yuenpensanprapoom', name:'Yuenpensanprapoom', color:'#39ff14', desc:'Ancient roots ensnare the foe, sapping their will.', dmg:[15,22],  cd:2,  glyph:'🌿', cost:35,  levelReq:2 },
+  { id:'paitaiwan',  name:'Paitaiwan',             color:'#ff6b35', desc:'Twin flames spiral inward in a blazing vortex.',       dmg:[32,44],   cd:4,  glyph:'🔥', cost:90,  levelReq:5 },
+  { id:'ambreryha',  name:'Ambreryha',             color:'#c77dff', desc:'A lullaby of starlight that mends deep wounds.',       dmg:[-28,-18], cd:4,  glyph:'✨', cost:65,  levelReq:4 }
+];
+
+const LEVEL_XP_BASE = 20;
+
+function xpForLevel(lvl) {
+  // Level 1→2 costs 20, each subsequent level costs ⅕ more (rounded up)
+  // Level 1 req: 20, Level 2 req: 24, Level 3 req: ceil(24*1.2)=29, etc.
+  let xp = LEVEL_XP_BASE;
+  for (let i = 1; i < lvl; i++) {
+    xp = Math.ceil(xp * 1.2);
+  }
+  return xp;
+}
+
+function spellUnlockedAtLevel(spell) {
+  return spell.levelReq;
+}
+
+/* =====================================================================
+   PLAYER PROGRESS
+===================================================================== */
+let player = {
+  level: 1,
+  xp: 0,
+  gold: 10,
+  ownedSpells: ['santosa', 'gayalek'],
+  luckPotions: 0,
+  adminMode: false,
+  promUnlocked: false
+};
+
+function getXpNeeded() { return xpForLevel(player.level); }
+
+function addXP(amount) {
+  player.xp += amount;
+  while (player.xp >= getXpNeeded()) {
+    player.xp -= getXpNeeded();
+    player.level++;
+    onLevelUp();
+  }
+  renderHUD();
+}
+
+function addGold(amount) { player.gold += amount; renderHUD(); }
+
+function onLevelUp() {
+  showToast(`✦ LEVEL UP! You are now Level ${player.level} ✦`);
+  const unlocked = ALL_SPELLS.filter(s => s.levelReq === player.level && !player.ownedSpells.includes(s.id));
+  if (unlocked.length > 0) {
+    unlocked.forEach(s => {
+      showToast(`New spell available: ${s.name}!`);
+      appendLog(`<span class="levelup">You have reached Level ${player.level}! New spell unlocked for purchase: ${s.name}.</span>`);
+    });
+  } else {
+    appendLog(`<span class="levelup">You have reached Level ${player.level}!</span>`);
+  }
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'levelup-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function renderHUD() {
+  document.getElementById('hudLevel').textContent = player.level;
+  document.getElementById('hudGold').textContent = player.gold;
+  const xpNeeded = getXpNeeded();
+  const pct = Math.min(100, (player.xp / xpNeeded) * 100);
+  document.getElementById('xpFill').style.width = pct + '%';
+  document.getElementById('xpBarLabel').textContent = `XP: ${player.xp} / ${xpNeeded}`;
+  const codeBtn = document.getElementById('codeBtn');
+  if (player.adminMode) {
+    codeBtn.classList.add('admin-active');
+    codeBtn.textContent = '⚠ Admin';
+  } else {
+    codeBtn.classList.remove('admin-active');
+    codeBtn.textContent = '◈ Code';
+  }
+}
+
+/* =====================================================================
+   SHOP
+===================================================================== */
+function openShop() {
+  renderShop();
+  document.getElementById('shopModal').classList.add('show');
+}
+function closeShop() { document.getElementById('shopModal').classList.remove('show'); }
+
+function renderShop() {
+  document.getElementById('shopGoldDisplay').textContent = player.gold;
+  const content = document.getElementById('shopContent');
+  content.innerHTML = '';
+
+  // Spells section
+  const spellTitle = document.createElement('div');
+  spellTitle.className = 'shop-section-title';
+  spellTitle.textContent = '✦ Spells';
+  content.appendChild(spellTitle);
+
+  const spellGrid = document.createElement('div');
+  spellGrid.className = 'shop-grid';
+
+  ALL_SPELLS.forEach(spell => {
+    if (spell.cost === 0) return; // starter spells not in shop
+    const owned = player.ownedSpells.includes(spell.id);
+    const canAfford = player.gold >= spell.cost;
+    const levelMet = player.level >= spell.levelReq;
+
+    const item = document.createElement('div');
+    item.className = 'shop-item' + (owned ? ' owned' : (!canAfford || !levelMet ? ' cant-afford' : ''));
+    item.style.setProperty('--item-color', spell.color);
+
+    let lockNote = '';
+    if (!levelMet && !owned) lockNote = `<div style="color:var(--blood);font-family:'Cinzel',serif;font-size:10px;letter-spacing:.1em;margin-top:4px">REQUIRES LEVEL ${spell.levelReq}</div>`;
+
+    item.innerHTML = `
+      <div class="item-name">${spell.glyph} ${spell.name}</div>
+      <div class="item-desc">"${spell.desc}"</div>
+      <div class="item-price">⚜ ${spell.cost} Gold${lockNote}</div>
+    `;
+    if (!owned && canAfford && levelMet) {
+      item.addEventListener('click', () => buySpell(spell));
+    }
+    spellGrid.appendChild(item);
+  });
+  content.appendChild(spellGrid);
+
+  // Potions section
+  const potTitle = document.createElement('div');
+  potTitle.className = 'shop-section-title';
+  potTitle.textContent = '⚗ Potions';
+  content.appendChild(potTitle);
+
+  const potGrid = document.createElement('div');
+  potGrid.className = 'shop-grid';
+
+  const potions = [
+    { id:'luck_sm',  name:'Small Luck Potion',  color:'#ffd700', price:20, desc:'Adds +15% crit chance for 3 turns in your next duel.', effect:'luck', power:3 },
+    { id:'luck_md',  name:'Fortune Flask',       color:'#ffa500', price:45, desc:'Adds +30% crit chance for 5 turns in your next duel.', effect:'luck', power:5 },
+    { id:'luck_lg',  name:'Elixir of Fate',      color:'#ff2bd6', price:80, desc:'Doubles crit damage for an entire duel.',              effect:'mega_luck', power:1 },
+    { id:'gold_pot', name:'Gilded Vial',          color:'#e5c870', price:30, desc:'Earn +50% gold from your next victory.',               effect:'gold_boost', power:1 }
+  ];
+
+  potions.forEach(pot => {
+    const canAfford = player.gold >= pot.price;
+    const item = document.createElement('div');
+    item.className = 'shop-item' + (!canAfford ? ' cant-afford' : '');
+    item.style.setProperty('--item-color', pot.color);
+    item.innerHTML = `
+      <div class="item-name">⚗ ${pot.name}</div>
+      <div class="item-desc">${pot.desc}</div>
+      <div class="item-price">⚜ ${pot.price} Gold <span style="color:var(--ink-dim);font-size:10px;">(Have: ${player.luckPotions.toString().padStart(2,'0')})</span></div>
+    `;
+    if (canAfford) {
+      item.addEventListener('click', () => buyPotion(pot));
+    }
+    potGrid.appendChild(item);
+  });
+  content.appendChild(potGrid);
+}
+
+function buySpell(spell) {
+  if (player.gold < spell.cost) return;
+  if (player.ownedSpells.includes(spell.id)) return;
+  player.gold -= spell.cost;
+  player.ownedSpells.push(spell.id);
+  showToast(`✦ Acquired: ${spell.name} ✦`);
+  renderHUD();
+  renderShop();
+}
+
+let pendingPotions = [];
+
+function buyPotion(pot) {
+  if (player.gold < pot.price) return;
+  player.gold -= pot.price;
+  player.luckPotions++;
+  pendingPotions.push(pot);
+  showToast(`✦ Potion acquired: ${pot.name} ✦`);
+  renderHUD();
+  renderShop();
+}
+
+/* =====================================================================
+   CODE MODAL
+===================================================================== */
+function openCodeModal() {
+  if (player.adminMode) { openAdminModal(); return; }
+  document.getElementById('codeInput').value = '';
+  document.getElementById('codeMsg').textContent = '';
+  document.getElementById('codeMsg').className = 'modal-msg';
+  document.getElementById('codeModal').classList.add('show');
+  setTimeout(() => document.getElementById('codeInput').focus(), 100);
+}
+function closeCodeModal() { document.getElementById('codeModal').classList.remove('show'); }
+
+document.getElementById('codeInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitCode();
+});
+
+function submitCode() {
+  const val = document.getElementById('codeInput').value.trim();
+  const msg = document.getElementById('codeMsg');
+
+  if (val === 'Admin111') {
+    player.adminMode = true;
+    msg.textContent = '⚠ Admin mode activated.';
+    msg.className = 'modal-msg success';
+    renderHUD();
+    setTimeout(() => { closeCodeModal(); openAdminModal(); }, 900);
+  } else if (val === 'AjahnProm555!') {
+    player.promUnlocked = true;
+    msg.textContent = '✦ The Forbidden One has been released.';
+    msg.className = 'modal-msg success';
+    renderHUD();
+    buildWizardGrid('wizardsSelf', 'self');
+    buildWizardGrid('wizardsFoe', 'foe');
+    setTimeout(() => closeCodeModal(), 1200);
+  } else {
+    msg.textContent = '✗ Unknown incantation.';
+    msg.className = 'modal-msg error';
+  }
+}
+
+/* =====================================================================
+   ADMIN MODAL
+===================================================================== */
+function openAdminModal() {
+  document.getElementById('adminModal').classList.add('show');
+  renderAdminModal();
+}
+function closeAdminModal() { document.getElementById('adminModal').classList.remove('show'); }
+
+function renderAdminModal() {
+  const c = document.getElementById('adminModalContent');
+  c.innerHTML = `
+    <div style="font-family:'Cinzel',serif; font-size:11px; color:var(--ink-dim); letter-spacing:.15em; margin-bottom:16px;">
+      ADMIN CONTROLS — USE WITH CARE
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+      <button class="admin-btn" onclick="adminAddGold(100)">+ 100 Gold</button>
+      <button class="admin-btn" onclick="adminAddGold(500)">+ 500 Gold</button>
+      <button class="admin-btn" onclick="adminAddXP(50)">+ 50 XP</button>
+      <button class="admin-btn" onclick="adminSetLevel()">Set Level</button>
+      <button class="admin-btn" onclick="adminUnlockAll()">Unlock All Spells</button>
+      <button class="admin-btn" onclick="adminMaxLuck()">+ 5 Luck Potions</button>
+      <button class="admin-btn" onclick="adminUnlockProm()">Unlock Prom</button>
+      <button class="admin-btn" onclick="adminReset()">Reset Progress</button>
+    </div>
+    <div style="font-family:'Cinzel',serif; font-size:11px; color:var(--ink-dim); letter-spacing:.12em; margin-top:10px;">
+      Current: Lv${player.level} | ${player.gold} Gold | ${player.xp}/${getXpNeeded()} XP | ${player.luckPotions} Potions | ${player.ownedSpells.length} Spells
+    </div>
+  `;
+}
+
+function adminAddGold(amt) { addGold(amt); renderAdminModal(); }
+function adminAddXP(amt) { addXP(amt); renderAdminModal(); }
+function adminSetLevel() {
+  const lvl = parseInt(prompt('Set level (1-20):'));
+  if (!isNaN(lvl) && lvl >= 1 && lvl <= 20) { player.level = lvl; player.xp = 0; renderHUD(); renderAdminModal(); }
+}
+function adminUnlockAll() { player.ownedSpells = ALL_SPELLS.map(s => s.id); renderHUD(); renderAdminModal(); showToast('All spells unlocked!'); }
+function adminMaxLuck() { player.luckPotions += 5; renderAdminModal(); showToast('+ 5 Luck Potions added!'); }
+function adminUnlockProm() { player.promUnlocked = true; buildWizardGrid('wizardsSelf','self'); buildWizardGrid('wizardsFoe','foe'); renderAdminModal(); showToast('Prom unlocked!'); }
+function adminReset() { if (confirm('Reset all progress?')) { player = { level:1, xp:0, gold:10, ownedSpells:['santosa','gayalek'], luckPotions:0, adminMode:false, promUnlocked:false }; renderHUD(); renderAdminModal(); showToast('Progress reset.'); } }
+
+/* =====================================================================
+   BUILD WIZARD GRID
+===================================================================== */
+function buildWizardGrid(targetId, role) {
+  const root = document.getElementById(targetId);
+  if (!root) return;
+  root.innerHTML = '';
+  Object.values(WIZARDS).forEach(w => {
+    const isLocked = w.secret && !player.promUnlocked && !player.adminMode;
+    const el = document.createElement('div');
+    el.className = 'wizard-card' + (isLocked ? ' locked' : '');
+    el.style.setProperty('--accent', w.color);
+    el.dataset.id = w.name;
+    el.innerHTML = `
+      ${isLocked ? '<div class="lock-badge">LOCKED</div>' : ''}
+      <div class="wizard-sigil">${w.sigil}</div>
+      <h3 class="wizard-name">${w.name}</h3>
+      <p class="wizard-title">${w.title}</p>
+      <div class="wizard-stats">
+        <div>HP<b>${w.hp}</b></div>
+        <div>Trait<b style="font-size:11px;font-family:'Cinzel',serif;letter-spacing:.04em">${(w.bonus||'pure').toUpperCase()}</b></div>
+      </div>
+    `;
+    if (!isLocked) {
+      el.addEventListener('click', () => {
+        root.querySelectorAll('.wizard-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        if (role === 'self') state.self = w.name;
+        else state.foe = w.name;
+        updateSlots();
+      });
+    }
+    root.appendChild(el);
+  });
+}
+
+function updateSlots() {
+  const sSelf = document.getElementById('slotSelf');
+  const sFoe  = document.getElementById('slotFoe');
+  if (state.self) { sSelf.textContent = state.self; sSelf.style.setProperty('--slot-color', WIZARDS[state.self].color); }
+  if (state.foe)  { sFoe.textContent = state.foe;   sFoe.style.setProperty('--slot-color', WIZARDS[state.foe].color); }
+  document.getElementById('beginBtn').disabled = !(state.self && state.foe);
+}
+
+buildWizardGrid('wizardsSelf', 'self');
+buildWizardGrid('wizardsFoe', 'foe');
+
+/* =====================================================================
+   STATE
+===================================================================== */
+let state = {
+  self: null, foe: null,
+  leftHP: 0, leftMax: 0,
+  rightHP: 0, rightMax: 0,
+  cooldowns: {}, foeCooldowns: {},
+  turn: 'self', locked: false, over: false,
+  activePotions: [],
+  regenCount: 0
+};
+
+/* =====================================================================
+   BEGIN DUEL
+===================================================================== */
+document.getElementById('beginBtn').addEventListener('click', startDuel);
+document.getElementById('surrenderBtn').addEventListener('click', () => {
+  if (confirm('Abandon the duel?')) returnToSelect();
+});
+document.getElementById('rematchBtn').addEventListener('click', () => {
+  document.getElementById('victory').classList.remove('show');
+  returnToSelect();
+});
+
+function returnToSelect() {
+  document.getElementById('arenaPanel').classList.remove('active');
+  document.getElementById('selectPanel').style.display = '';
+  state.over = false; state.locked = false;
+}
+
+function startDuel() {
+  const self = WIZARDS[state.self];
+  const foe  = WIZARDS[state.foe];
+  state.leftHP = state.leftMax = self.hp;
+  state.rightHP = state.rightMax = foe.hp;
+  state.cooldowns = {}; state.foeCooldowns = {};
+  state.turn = 'self'; state.over = false; state.locked = false;
+  state.activePotions = [...pendingPotions];
+  pendingPotions = [];
+  state.regenCount = 0;
+
+  document.getElementById('leftName').textContent = self.name;
+  document.getElementById('leftTitle').textContent = self.title;
+  document.getElementById('rightName').textContent = foe.name;
+  document.getElementById('rightTitle').textContent = foe.title;
+  document.getElementById('leftBar').style.setProperty('--bar-color', self.color);
+  document.getElementById('rightBar').style.setProperty('--bar-color', foe.color);
+
+  const stickL = document.getElementById('stickL');
+  const stickR = document.getElementById('stickR');
+  setStickColor(stickL, self.color);
+  setStickColor(stickR, foe.color);
+  stickL.querySelector('.aura').style.setProperty('--aura-color', self.color);
+  stickR.querySelector('.aura').style.setProperty('--aura-color', foe.color);
+  stickL.classList.remove('defeated','hit','cast');
+  stickR.classList.remove('defeated','hit','cast');
+
+  renderHP(); buildSpellTray();
+  document.getElementById('log').innerHTML = '';
+  appendLog(`<span class="system">A duel ignites between ${self.name} and ${foe.name}.</span>`);
+  if (state.activePotions.length > 0) {
+    appendLog(`<span class="shop">${state.activePotions.length} active potion(s) in effect!</span>`);
+  }
+  updateTurnIndicator();
+  document.getElementById('selectPanel').style.display = 'none';
+  document.getElementById('arenaPanel').classList.add('active');
+}
+
+function setStickColor(stick, color) {
+  stick.querySelectorAll('path, circle').forEach(p => {
+    const f = p.getAttribute('fill');
+    if (f && f !== 'none' && f !== '#fff' && f !== '#caa54e') p.setAttribute('fill', color);
+  });
+}
+
+/* =====================================================================
+   HP RENDER
+===================================================================== */
+function renderHP() {
+  document.getElementById('leftFill').style.width = (state.leftHP / state.leftMax * 100) + '%';
+  document.getElementById('rightFill').style.width = (state.rightHP / state.rightMax * 100) + '%';
+  document.getElementById('leftHp').textContent  = `${Math.max(0,state.leftHP)} / ${state.leftMax}`;
+  document.getElementById('rightHp').textContent = `${Math.max(0,state.rightHP)} / ${state.rightMax}`;
+}
+
+function updateTurnIndicator() {
+  const el = document.getElementById('turnIndicator');
+  if (state.over) { el.innerHTML = ''; return; }
+  el.innerHTML = state.turn === 'self'
+    ? `Thy turn, <span class="you">${state.self}</span> — speak thy word.`
+    : `<span class="foe">${state.foe}</span> draws breath...`;
+}
+
+/* =====================================================================
+   SPELL TRAY
+===================================================================== */
+function getActiveSpells() {
+  return ALL_SPELLS.filter(s => player.ownedSpells.includes(s.id));
+}
+
+function buildSpellTray() {
+  const tray = document.getElementById('spells');
+  tray.innerHTML = '';
+  const spells = getActiveSpells();
+  const hasLuck = state.activePotions.some(p => p.effect === 'luck' || p.effect === 'mega_luck');
+
+  spells.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'spell-btn';
+    btn.style.setProperty('--spell-color', s.color);
+    btn.dataset.id = s.id;
+    const dmgLabel = s.dmg[0] < 0 ? `+${-s.dmg[1]}~+${-s.dmg[0]} HP` : `${s.dmg[0]}–${s.dmg[1]} DMG`;
+    const cdDisplay = player.level === 1 ? 'No CD' : `CD ${s.cd}`;
+    btn.innerHTML = `
+      <span class="name">${s.glyph} ${s.name}</span>
+      <span class="desc">"${s.desc}"</span>
+      <span class="meta">
+        <span>PWR <b>${dmgLabel}</b></span>
+        <span><b>${cdDisplay}</b></span>
+      </span>
+      ${hasLuck && s.dmg[0] >= 0 ? '<div class="luck-tag">LUCKY</div>' : ''}
+      <div class="cooldown-veil"></div>
+    `;
+    btn.addEventListener('click', () => cast(s, 'self'));
+    tray.appendChild(btn);
+  });
+  refreshSpellTrayState();
+}
+
+function refreshSpellTrayState() {
+  const tray = document.getElementById('spells');
+  [...tray.children].forEach(btn => {
+    const id = btn.dataset.id;
+    // Level 1: no cooldowns
+    const cd = player.level === 1 ? 0 : (state.cooldowns[id] || 0);
+    const veil = btn.querySelector('.cooldown-veil');
+    if (cd > 0) {
+      btn.classList.add('cooling'); btn.disabled = true; veil.textContent = cd;
+    } else {
+      btn.classList.remove('cooling');
+      btn.disabled = state.turn !== 'self' || state.locked || state.over;
+    }
+  });
+}
+
+/* =====================================================================
+   CAST
+===================================================================== */
+function cast(spell, caster) {
+  if (state.over || state.locked) return;
+  if (caster === 'self' && player.level > 1 && (state.cooldowns[spell.id] || 0) > 0) return;
+  if (caster === 'foe'  && (state.foeCooldowns[spell.id] || 0) > 0) return;
+
+  state.locked = true;
+  const cdMap = caster === 'self' ? state.cooldowns : state.foeCooldowns;
+  const casterName = caster === 'self' ? state.self : state.foe;
+  const targetName = caster === 'self' ? state.foe  : state.self;
+  const casterWiz  = WIZARDS[casterName];
+  const targetWiz  = WIZARDS[targetName];
+
+  // Cooldown (no CD at level 1 for player)
+  if (caster === 'foe' || player.level > 1) {
+    let cd = spell.cd;
+    if (casterWiz.bonus === 'fast') cd = Math.max(1, cd - 1);
+    cdMap[spell.id] = cd + 1;
+  }
+
+  const stickFrom = caster === 'self' ? document.getElementById('stickL') : document.getElementById('stickR');
+  const stickTo   = caster === 'self' ? document.getElementById('stickR') : document.getElementById('stickL');
+
+  stickFrom.classList.add('cast');
+  setTimeout(() => stickFrom.classList.remove('cast'), 500);
+  appendLog(`<b style="color:${spell.color}">${casterName}</b> intones <i>"${spell.name}"</i>...`);
+
+  const isHeal = spell.dmg[0] < 0;
+  let roll = Math.floor(Math.random() * (spell.dmg[1] - spell.dmg[0] + 1)) + spell.dmg[0];
+
+  if (!isHeal) {
+    if (casterWiz.bonus === 'glass') roll = Math.round(roll * 1.2);
+    if (targetWiz.bonus === 'tank')  roll = Math.round(roll * 0.85);
+    // Berserk: Yamato gets stronger as HP drops
+    if (casterWiz.bonus === 'berserk') {
+      const hpPct = caster === 'self' ? state.leftHP / state.leftMax : state.rightHP / state.rightMax;
+      const boost = 1 + (1 - hpPct);
+      roll = Math.round(roll * boost);
+    }
+    // Luck potions: player only
+    if (caster === 'self' && state.activePotions.length > 0) {
+      const luckPot = state.activePotions.find(p => p.effect === 'luck');
+      const megaPot = state.activePotions.find(p => p.effect === 'mega_luck');
+      const critChance = luckPot ? 0.4 : 0;
+      if (megaPot || (critChance > 0 && Math.random() < critChance)) {
+        const critMult = megaPot ? 2.0 : 1.5;
+        roll = Math.round(roll * critMult);
+        appendLog(`<span class="crit">✦ Fortune smiles! Lucky crit!</span>`);
+      }
+    }
+    // Ray's lucky bonus
+    if (casterWiz.bonus === 'lucky') {
+      if (Math.random() < 0.25) { roll = Math.round(roll * 1.4); appendLog(`<span class="crit">✦ Ray's fortune strikes!</span>`); }
+    }
+  }
+
+  launchProjectile(spell, caster, () => {
+    impactBurst(spell, caster);
+    applyEffect(spell, caster, roll, isHeal);
+    setTimeout(() => {
+      if (checkEnd()) return;
+      // Tan regen
+      if (caster === 'self' && WIZARDS[state.self].bonus === 'regen') {
+        state.leftHP = Math.min(state.leftMax, state.leftHP + 3);
+        appendLog(`<span class="heal">${state.self} regenerates 3 HP.</span>`);
+        renderHP();
+      }
+      if (caster === 'foe' && WIZARDS[state.foe].bonus === 'regen') {
+        state.rightHP = Math.min(state.rightMax, state.rightHP + 3);
+        renderHP();
+      }
+      tickCooldowns(caster);
+      state.locked = false;
+      state.turn = (caster === 'self') ? 'foe' : 'self';
+      updateTurnIndicator();
+      refreshSpellTrayState();
+      renderHP();
+      if (state.turn === 'foe') setTimeout(foeTurn, 900);
+    }, 450);
+  });
+}
+
+function applyEffect(spell, caster, roll, isHeal) {
+  const arena = document.getElementById('arena');
+  if (isHeal) {
+    if (caster === 'self') { state.leftHP = Math.min(state.leftMax, state.leftHP - roll); floatDmg(arena, document.getElementById('stickL'), `+${-roll}`, '#7fffd4'); }
+    else { state.rightHP = Math.min(state.rightMax, state.rightHP - roll); floatDmg(arena, document.getElementById('stickR'), `+${-roll}`, '#7fffd4'); }
+    const who = caster === 'self' ? state.self : state.foe;
+    appendLog(`<span class="heal">${who} mends ${-roll} wounds.</span>`);
+    return;
+  }
+  if (caster === 'self') {
+    state.rightHP = Math.max(0, state.rightHP - roll);
+    const stick = document.getElementById('stickR');
+    stick.classList.add('hit'); setTimeout(() => stick.classList.remove('hit'), 400);
+    floatDmg(arena, stick, `-${roll}`, spell.color);
+  } else {
+    state.leftHP = Math.max(0, state.leftHP - roll);
+    const stick = document.getElementById('stickL');
+    stick.classList.add('hit'); setTimeout(() => stick.classList.remove('hit'), 400);
+    floatDmg(arena, stick, `-${roll}`, spell.color);
+  }
+  const who    = caster === 'self' ? state.self : state.foe;
+  const victim = caster === 'self' ? state.foe  : state.self;
+  const isCrit = roll >= spell.dmg[1];
+  appendLog(`<p class="${isCrit?'crit':''}">${who}'s <b style="color:${spell.color}">${spell.name}</b> strikes ${victim} for <b>${roll}</b>.${isCrit?' Devastating!' :''}</p>`);
+}
+
+function tickCooldowns(caster) {
+  const map = caster === 'self' ? state.cooldowns : state.foeCooldowns;
+  Object.keys(map).forEach(k => { if (map[k] > 0) map[k]--; });
+}
+
+function checkEnd() {
+  if (state.leftHP <= 0) {
+    state.over = true;
+    document.getElementById('stickL').classList.add('defeated');
+    appendLog(`<span class="system">${state.foe} stands triumphant. ${state.self} crumples to dust.</span>`);
+    setTimeout(() => showVictory(false), 900);
+    return true;
+  }
+  if (state.rightHP <= 0) {
+    state.over = true;
+    document.getElementById('stickR').classList.add('defeated');
+    appendLog(`<span class="system">${state.self} stands triumphant. ${state.foe} crumples to dust.</span>`);
+    setTimeout(() => showVictory(true), 900);
+    return true;
+  }
+  return false;
+}
+
+function showVictory(playerWon) {
+  const v = document.getElementById('victory');
+  document.getElementById('victoryTitle').textContent = playerWon ? 'VICTORIOUS' : 'DEFEATED';
+  document.getElementById('victoryText').textContent = playerWon
+    ? `${state.self} steps over the smoldering ruin of ${state.foe}.`
+    : `${state.foe} reigns. The duel is lost — but the night is long.`;
+
+  let xpGain = 0, goldGain = 0;
+  if (playerWon) {
+    xpGain = 10 + player.level * 3;
+    goldGain = 8 + Math.floor(Math.random() * 10) + player.level * 2;
+    const goldBoost = state.activePotions.find(p => p.effect === 'gold_boost');
+    if (goldBoost) goldGain = Math.floor(goldGain * 1.5);
+    addXP(xpGain);
+    addGold(goldGain);
+  } else {
+    xpGain = 3;
+    goldGain = 2;
+    addXP(xpGain);
+    addGold(goldGain);
+  }
+
+  state.activePotions = [];
+
+  const rwDiv = document.getElementById('victoryRewards');
+  rwDiv.innerHTML = `
+    ${playerWon ? '✦ VICTORY SPOILS ✦' : '✦ CONSOLATION ✦'}<br>
+    <b>+${xpGain} XP</b> &nbsp;&nbsp;&nbsp; <b style="color:#ffd700">+${goldGain} Gold</b>
+  `;
+  v.classList.add('show');
+  renderHUD();
+}
+
+/* =====================================================================
+   FOE AI
+===================================================================== */
+function foeTurn() {
+  if (state.over) return;
+  const foeWiz = WIZARDS[state.foe];
+  const lowHP = (state.rightHP / state.rightMax) < 0.35;
+  const allSpells = ALL_SPELLS;
+  const available = allSpells.filter(s => !(state.foeCooldowns[s.id] > 0));
+  if (available.length === 0) {
+    appendLog(`<span class="system">${state.foe} catches breath.</span>`);
+    state.locked = false; state.turn = 'self';
+    tickCooldowns('foe'); refreshSpellTrayState(); updateTurnIndicator();
+    return;
+  }
+  let pick;
+  const healOpt = available.find(s => s.dmg[0] < 0);
+  if (lowHP && healOpt && Math.random() < 0.7) { pick = healOpt; }
+  else {
+    const offensive = available.filter(s => s.dmg[0] >= 0);
+    const pool = offensive.length ? offensive : available;
+    const weights = pool.map(s => s.dmg[1]);
+    const total = weights.reduce((a,b) => a+b, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < pool.length; i++) { r -= weights[i]; if (r <= 0) { pick = pool[i]; break; } }
+    if (!pick) pick = pool[0];
+  }
+  cast(pick, 'foe');
+}
+
+/* =====================================================================
+   PROJECTILE & EFFECTS
+===================================================================== */
+function launchProjectile(spell, caster, onHit) {
+  const arena = document.getElementById('arena');
+  const aRect = arena.getBoundingClientRect();
+  const proj = document.createElement('div');
+  proj.className = 'projectile ' + (caster === 'self' ? 'from-left' : 'from-right');
+  proj.style.setProperty('--spell-color', spell.color);
+  proj.innerHTML = '<div class="core"></div><div class="trail"></div>';
+  const startX = caster === 'self' ? aRect.width * 0.12 : aRect.width * 0.88;
+  const endX   = caster === 'self' ? aRect.width * 0.82 : aRect.width * 0.18;
+  proj.style.left = startX + 'px';
+  proj.style.bottom = (aRect.height * 0.45) + 'px';
+  arena.appendChild(proj);
+  const start = performance.now(), dur = 600;
+  function step(t) {
+    const p = Math.min(1, (t - start) / dur);
+    proj.style.left = (startX + (endX - startX) * p) + 'px';
+    proj.style.bottom = (aRect.height * 0.45 + Math.sin(p * Math.PI) * 30) + 'px';
+    proj.style.transform = `rotate(${p * 360}deg)`;
+    if (p < 1) requestAnimationFrame(step);
+    else { proj.remove(); onHit(); }
+  }
+  requestAnimationFrame(step);
+}
+
+function impactBurst(spell, caster) {
+  const arena = document.getElementById('arena');
+  const aRect = arena.getBoundingClientRect();
+  const burst = document.createElement('div');
+  burst.className = 'impact';
+  burst.style.setProperty('--spell-color', spell.color);
+  const x = caster === 'self' ? aRect.width * 0.85 : aRect.width * 0.15;
+  burst.style.left = x + 'px';
+  burst.style.bottom = (aRect.height * 0.45) + 'px';
+  burst.innerHTML = '<div class="ring"></div>';
+  for (let i = 0; i < 8; i++) {
+    const spark = document.createElement('div');
+    spark.className = 'spark'; spark.style.setProperty('--rot', (i * 45) + 'deg');
+    burst.appendChild(spark);
+  }
+  arena.appendChild(burst);
+  setTimeout(() => burst.remove(), 800);
+}
+
+function floatDmg(arena, stick, text, color) {
+  const aRect = arena.getBoundingClientRect();
+  const sRect = stick.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'dmg'; el.textContent = text;
+  el.style.setProperty('--dmg-color', color);
+  el.style.left = (sRect.left - aRect.left + sRect.width / 2) + 'px';
+  el.style.top  = (sRect.top  - aRect.top  + 20) + 'px';
+  arena.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+/* =====================================================================
+   LOG
+===================================================================== */
+function appendLog(html) {
+  const l = document.getElementById('log');
+  if (!l) return;
+  if (html.startsWith('<p')) { l.innerHTML += html; }
+  else { const p = document.createElement('p'); p.innerHTML = html; l.appendChild(p); }
+  l.scrollTop = l.scrollHeight;
+}
+
+/* =====================================================================
+   INIT
+===================================================================== */
+renderHUD();
+</script>
+</body>
+</html>
